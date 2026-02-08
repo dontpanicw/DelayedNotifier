@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Delayed Notifier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --surface: #18181c;
+      --border: #2a2a30;
+      --text: #e4e4e7;
+      --text-muted: #71717a;
+      --accent: #22d3ee;
+      --accent-dim: #0891b2;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --error: #f87171;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+    .container { max-width: 720px; margin: 0 auto; padding: 2rem 1rem; }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      color: var(--accent);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    label {
+      display: block;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      margin-bottom: 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.95rem;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.15);
+    }
+    textarea { min-height: 80px; resize: vertical; }
+    button {
+      font-family: 'Outfit', sans-serif;
+      padding: 0.6rem 1.25rem;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 0.9rem;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    button:active { transform: scale(0.98); }
+    .btn-primary {
+      background: var(--accent);
+      color: var(--bg);
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
+    .notifications-list { list-style: none; }
+    .notifications-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.85rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    .notifications-list li:last-child { border-bottom: none; }
+    .notif-text { flex: 1; color: var(--text); }
+    .notif-meta {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+    .notif-id { font-size: 0.7rem; opacity: 0.7; word-break: break-all; }
+    .status {
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+    .status-Scheduled { background: rgba(34, 211, 238, 0.2); color: var(--accent); }
+    .status-Sent { background: rgba(52, 211, 153, 0.2); color: var(--success); }
+    .status-Failed, .status-Terminally_Failed { background: rgba(248, 113, 113, 0.2); color: var(--error); }
+    .empty { color: var(--text-muted); text-align: center; padding: 2rem; font-size: 0.9rem; }
+    .error-msg { color: var(--error); font-size: 0.875rem; margin-top: 0.5rem; }
+    .loading { opacity: 0.6; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Delayed Notifier</h1>
+
+    <div class="card">
+      <h2>Новое уведомление</h2>
+      <form id="form">
+        <label for="text">Текст</label>
+        <textarea id="text" name="text" required placeholder="Текст уведомления..."></textarea>
+        <label for="scheduled_at">Время отправки (RFC3339)</label>
+        <input type="datetime-local" id="scheduled_at" name="scheduled_at" required>
+        <label for="user_id">User ID</label>
+        <input type="number" id="user_id" name="user_id" min="1" required placeholder="1">
+        <label for="telegram_chat_id">Telegram Chat ID</label>
+        <input type="number" id="telegram_chat_id" name="telegram_chat_id" min="1" required placeholder="123456789">
+        <p id="form-error" class="error-msg" style="display:none;"></p>
+        <button type="submit" class="btn-primary" id="submit-btn">Создать</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Уведомления</h2>
+      <ul class="notifications-list" id="list"></ul>
+      <p class="empty" id="empty">Загрузка...</p>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
