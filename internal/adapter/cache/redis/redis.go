@@ -9,8 +9,13 @@ import (
 
 const statusKeyPrefix = "msg_status:"
 
+type redisClient interface {
+	Get(ctx context.Context, key string) *redis.StringCmd
+	Set(ctx context.Context, key string, value interface{}, expiration time.Duration) *redis.StatusCmd
+}
+
 type StatusCache struct {
-	client *redis.Client
+	client redisClient
 }
 
 func NewStatusCache(addr string) *StatusCache {

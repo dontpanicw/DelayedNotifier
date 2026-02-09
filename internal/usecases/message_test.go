@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/dontpanicw/DelayedNotifier/internal/domain"
-	"github.com/dontpanicw/DelayedNotifier/internal/port"
 )
 
 type repoMock struct {
@@ -201,4 +200,3 @@ func TestGetMessageStatus_FillsCacheOnMiss(t *testing.T) {
 		t.Fatalf("expected cache to be filled with DB status, got %s", cached)
 	}
 }
-
