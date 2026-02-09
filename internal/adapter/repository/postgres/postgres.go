@@ -27,6 +27,7 @@ const (
        WHERE id = $1
        `
 	listMessagesQuery = `SELECT id, text, status, scheduled_at, user_id, telegram_chat_id FROM messages ORDER BY created_at DESC`
+	updateStatusQuery = `UPDATE messages SET status = $2, updated_at = NOW() WHERE id = $1`
 )
 
 type MessageRepository struct {
@@ -85,6 +86,14 @@ func (m *MessageRepository) ListMessages(ctx context.Context) ([]domain.Message,
 
 func (m *MessageRepository) DeleteMessage(ctx context.Context, id string) error {
 	_, err := m.PostgresDB.ExecWithRetry(ctx, createRetryStrategy(), deleteMessageQuery, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *MessageRepository) UpdateMessageStatus(ctx context.Context, id, status string) error {
+	_, err := m.PostgresDB.ExecWithRetry(ctx, createRetryStrategy(), updateStatusQuery, id, status)
 	if err != nil {
 		return err
 	}

@@ -16,4 +16,5 @@ func main() {
 	if err := app.Start(cfg); err != nil {
 		log.Fatal("failed to start application")
 	}
+
 }

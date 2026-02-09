@@ -8,11 +8,19 @@ services:
     environment:
       - HTTP_PORT=8080
       - MASTER_DSN=postgres://postgres:postgres@db:5432/postgres?sslmode=disable
+      - RABBIT_URL=amqp://guest:guest@rabbitmq:5672/
+      - REDIS_ADDR=redis:6379
+
     ports:
       - "8080:8080"
     depends_on:
       db:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: on-failure
     networks:
       - app-network
   db:
@@ -32,30 +40,59 @@ services:
       retries: 5
     networks:
       - app-network
-#  RabbitMQ:
-#    image: rabbitmq:3-management
-#    container_name: rabbitmq
-#    ports:
-#      - "5672:5672"
-#      - "15672:15672"
-#    environment:
-#      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
-#      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
-#    volumes:
-#      - rabbitmq_data:/var/lib/rabbitmq
-#  Redis:
-#    image: redis:7
-#    container_name: redis
-#    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
-#    ports:
-#      - "6379:6379"
-#    volumes:
-#      - redis_data:/data
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"    # AMQP протокол для приложений
+      - "15672:15672"  # Web интерфейс управления
+    environment:
+      RABBITMQ_DEFAULT_USER: guest     # или ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: guest     # или ${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["./worker"]
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      - MASTER_DSN=postgres://postgres:postgres@db:5432/postgres?sslmode=disable
+      - RABBIT_URL=amqp://guest:guest@rabbitmq:5672/
+      - REDIS_ADDR=redis:6379
+    restart: on-failure
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
 
 volumes:
   postgres_data:
-#  rabbitmq_data:
-#  redis_data:
+  rabbitmq_data:
+  redis_data:
 networks:
   app-network:
     driver: bridge

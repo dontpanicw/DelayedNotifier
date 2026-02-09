@@ -10,6 +10,8 @@ type Config struct {
 	HTTPPort  string
 	MasterDSN string
 	SlaveDSNs []string
+	RabbitURL string
+	RedisAddr string
 }
 
 const DefaultHTTPPort = ":8080"
@@ -39,6 +41,20 @@ func NewConfig() (*Config, error) {
 	slaveDSNs := make([]string, 0)
 	slaveDSN := os.Getenv("SLAVE_DSN")
 	slaveDSNs = append(slaveDSNs, slaveDSN)
+
+	rabbitURL := os.Getenv("RABBIT_URL")
+	if rabbitURL != "" {
+		cfg.RabbitURL = rabbitURL
+	} else {
+		log.Print("No RabbitMQ URL found")
+	}
+
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr != "" {
+		cfg.RedisAddr = redisAddr
+	} else {
+		cfg.RedisAddr = "localhost:6379"
+	}
 
 	return &cfg, nil
 }
